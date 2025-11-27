@@ -41,6 +41,30 @@ add_custom_target(allcore)
 if(BUILD_SHARED)
     set(CORELIBS PUBLIC OPENFHEcore ${THIRDPARTYLIBS} ${OpenMP_CXX_FLAGS})
     target_link_libraries(OPENFHEcore ${THIRDPARTYLIBS} ${OpenMP_CXX_FLAGS} ${ADDITIONAL_LIBS})
+    if(REFHE_PATH)
+        message(STATUS "Using reFHE from: ${REFHE_PATH}")
+
+        set(REFHE_INCLUDE_DIR "${REFHE_PATH}/include")
+        set(REFHE_LIBRARY "${REFHE_PATH}/lib/libreFHE.so")
+
+        if(NOT EXISTS "${REFHE_LIBRARY}")
+            message(FATAL_ERROR "reFHE library not found at: ${REFHE_LIBRARY}")
+        endif()
+        add_definitions(-DENABLE_REFHE)
+        add_library(reFHE SHARED IMPORTED)
+
+        set_target_properties(reFHE PROPERTIES
+            IMPORTED_LOCATION "${REFHE_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${REFHE_INCLUDE_DIR}"
+        )
+
+        target_link_libraries(OPENFHEcore reFHE)
+        include_directories(${REFHE_INCLUDE_DIR})
+
+        set_target_properties(OPENFHEcore PROPERTIES
+            BUILD_RPATH "${REFHE_PATH}/lib"
+        )
+    endif()
     add_dependencies(allcore OPENFHEcore)
 endif()
 

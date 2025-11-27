@@ -777,3 +777,4 @@ install(FILES
 # Install the export set for use with the install-tree
 install(EXPORT OpenFHETargets DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
 # install(EXPORT OpenFHETargets DESTINATION "${INSTALL_CMAKE_DIR}" NAMESPACE OpenFHE:: COMPONENT dev)
+set(REFHE_PATH "" CACHE PATH "Path to reFHE install folder (must contain include/ and lib/)")
