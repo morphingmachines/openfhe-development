@@ -402,11 +402,18 @@ DCRTPolyImpl<VecType>& DCRTPolyImpl<VecType>::operator+=(const DCRTPolyImpl& rhs
     DCRTPolyType tmp(m_params, m_format, true);
     const auto& params{m_params->GetParams()};
     uint64_t ringdm{m_params->GetRingDimension()};
-
-    for (size_t i = 0; i < size; ++i) {
-        uint64_t* op1       = reinterpret_cast<uint64_t*>(&m_vectors[i][0]);
-        const uint64_t* op2 = reinterpret_cast<const uint64_t*>(&rhs.m_vectors[i][0]);
-        reFHE::GetInstance().AddMod(op1, op2, ringdm, params[i]->GetModulus().template ConvertToInt<uint64_t>());
+    if (ringdm <= INT32_MAX) {
+        for (size_t i = 0; i < size; ++i) {
+            uint64_t* op1       = reinterpret_cast<uint64_t*>(&m_vectors[i][0]);
+            const uint64_t* op2 = reinterpret_cast<const uint64_t*>(&rhs.m_vectors[i][0]);
+            reFHE::GetInstance().AddMod(op1, op2, (uint32_t)ringdm,
+                                        params[i]->GetModulus().template ConvertToInt<uint64_t>());
+        }
+    }
+    else {  // Fallback
+    #pragma omp parallel for num_threads(OpenFHEParallelControls.GetThreadLimit(size))
+        for (size_t i = 0; i < size; ++i)
+            m_vectors[i] += rhs.m_vectors[i];
     }
 #else
     #pragma omp parallel for num_threads(OpenFHEParallelControls.GetThreadLimit(size))
