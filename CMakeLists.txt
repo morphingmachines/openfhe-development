@@ -88,6 +88,7 @@ endif()
 if(NOT CKKS_M_FACTOR)
     set(CKKS_M_FACTOR 1)
 endif()
+set(REFHE_PATH "" CACHE PATH "Path to reFHE install folder (must contain include/ and lib/)")
 
 ### Print options
 message(STATUS "BUILD_UNITTESTS:    ${BUILD_UNITTESTS}")
@@ -109,6 +110,7 @@ message(STATUS "WITH_COVTEST:       ${WITH_COVTEST}")
 message(STATUS "WITH_NOISE_DEBUG:   ${WITH_NOISE_DEBUG}")
 message(STATUS "WITH_REDUCED_NOISE: ${WITH_REDUCED_NOISE}")
 message(STATUS "USE_MACPORTS:       ${USE_MACPORTS}")
+message(STATUS "REFHE_PATH:       ${REFHE_PATH}")
 
 #--------------------------------------------------------------------
 # Compiler logic
@@ -220,6 +222,16 @@ endif()
 
 set(OpenFHE_PACKAGE_LIBS ${OpenFHE_STATIC_LIBS} ${OpenFHE_SHARED_LIBS})
 
+if(REFHE_PATH)
+    message(STATUS ">>> Building with reFHE enabled <<<")
+
+    set(REFHE_INCLUDE_DIR "${REFHE_PATH}/include")
+    set(REFHE_LIB "${REFHE_PATH}/lib/libreFHE.so")
+
+    # Make available to all targets
+    add_compile_definitions(ENABLE_REFHE)
+    include_directories(${REFHE_INCLUDE_DIR})
+endif()
 #--------------------------------------------------------------------
 # Installation logic
 #--------------------------------------------------------------------
@@ -777,4 +789,3 @@ install(FILES
 # Install the export set for use with the install-tree
 install(EXPORT OpenFHETargets DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
 # install(EXPORT OpenFHETargets DESTINATION "${INSTALL_CMAKE_DIR}" NAMESPACE OpenFHE:: COMPONENT dev)
-set(REFHE_PATH "" CACHE PATH "Path to reFHE install folder (must contain include/ and lib/)")

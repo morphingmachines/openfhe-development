@@ -53,6 +53,10 @@
 #include <utility>
 #include <vector>
 
+#ifdef ENABLE_REFHE
+    #include "reFHE.h"
+#endif
+
 namespace lbcrypto {
 
 template <typename VecType>
@@ -160,11 +164,34 @@ public:
             OPENFHE_THROW("tower size mismatch; cannot add");
         if (m_vectors[0].GetModulus() != rhs.m_vectors[0].GetModulus())
             OPENFHE_THROW("Modulus missmatch");
+#ifdef ENABLE_REFHE
+        DCRTPolyType tmp(m_params, m_format, true);
+        const auto& params{m_params->GetParams()};
+        uint64_t ringdm{m_params->GetRingDimension()};
+        if (ringdm <= INT32_MAX) {
+            for (size_t i = 0; i < size; ++i) {
+                uint64_t* res       = reinterpret_cast<uint64_t*>(&tmp.m_vectors[i][0]);
+                const uint64_t* op1 = reinterpret_cast<const uint64_t*>(&m_vectors[i][0]);
+                const uint64_t* op2 = reinterpret_cast<const uint64_t*>(&rhs.m_vectors[i][0]);
+                reFHE::GetInstance().AddMod(res, op1, op2, (uint32_t)ringdm,
+                                            params[i]->GetModulus().template ConvertToInt<uint64_t>());
+            }
+            return tmp;
+        }
+        else {  // Fallback
+            DCRTPolyType tmp(m_params, m_format);
+    #pragma omp parallel for num_threads(OpenFHEParallelControls.GetThreadLimit(size))
+            for (size_t i = 0; i < size; ++i)
+                tmp.m_vectors[i] = m_vectors[i].PlusNoCheck(rhs.m_vectors[i]);
+            return tmp;
+        }
+#else
         DCRTPolyType tmp(m_params, m_format);
-#pragma omp parallel for num_threads(OpenFHEParallelControls.GetThreadLimit(size))
+    #pragma omp parallel for num_threads(OpenFHEParallelControls.GetThreadLimit(size))
         for (size_t i = 0; i < size; ++i)
             tmp.m_vectors[i] = m_vectors[i].PlusNoCheck(rhs.m_vectors[i]);
         return tmp;
+#endif
     }
 
     DCRTPolyType Minus(const DCRTPolyType& rhs) const override;

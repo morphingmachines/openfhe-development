@@ -406,8 +406,8 @@ DCRTPolyImpl<VecType>& DCRTPolyImpl<VecType>::operator+=(const DCRTPolyImpl& rhs
         for (size_t i = 0; i < size; ++i) {
             uint64_t* op1       = reinterpret_cast<uint64_t*>(&m_vectors[i][0]);
             const uint64_t* op2 = reinterpret_cast<const uint64_t*>(&rhs.m_vectors[i][0]);
-            reFHE::GetInstance().AddMod(op1, op2, (uint32_t)ringdm,
-                                        params[i]->GetModulus().template ConvertToInt<uint64_t>());
+            reFHE::GetInstance().AddModInPlace(op1, op2, (uint32_t)ringdm,
+                                               params[i]->GetModulus().template ConvertToInt<uint64_t>());
         }
     }
     else {  // Fallback
