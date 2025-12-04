@@ -208,11 +208,35 @@ public:
             OPENFHE_THROW("tower size mismatch; cannot multiply");
         if (m_vectors[0].GetModulus() != rhs.m_vectors[0].GetModulus())
             OPENFHE_THROW("Modulus missmatch");
+#ifdef ENABLE_REFHE
+        DCRTPolyType tmp(m_params, m_format, true);
+        const auto& params{m_params->GetParams()};
+        uint64_t ringdm{m_params->GetRingDimension()};
+        uint64_t towers{m_vectors.size()};
+        if (ringdm <= INT32_MAX) {
+            for (uint64_t t = 0; t < towers; ++t) {
+                uint64_t* res       = reinterpret_cast<uint64_t*>(&tmp.m_vectors[t][0]);
+                const uint64_t* op1 = reinterpret_cast<const uint64_t*>(&m_vectors[t][0]);
+                const uint64_t* op2 = reinterpret_cast<const uint64_t*>(&rhs.m_vectors[t][0]);
+                reFHE::GetInstance().EltwiseMultModNative(res, op1, op2, ringdm,
+                                                          params[t]->GetModulus().template ConvertToInt<uint64_t>());
+            }
+            return tmp;
+        }
+        else {
+            DCRTPolyType tmp(m_params, m_format);
+    #pragma omp parallel for num_threads(OpenFHEParallelControls.GetThreadLimit(size))
+            for (size_t i = 0; i < size; ++i)
+                tmp.m_vectors[i] = m_vectors[i].TimesNoCheck(rhs.m_vectors[i]);
+            return tmp;
+        }
+#else
         DCRTPolyType tmp(m_params, m_format);
-#pragma omp parallel for num_threads(OpenFHEParallelControls.GetThreadLimit(size))
+    #pragma omp parallel for num_threads(OpenFHEParallelControls.GetThreadLimit(size))
         for (size_t i = 0; i < size; ++i)
             tmp.m_vectors[i] = m_vectors[i].TimesNoCheck(rhs.m_vectors[i]);
         return tmp;
+#endif
     }
     DCRTPolyType Times(const Integer& rhs) const override;
     DCRTPolyType Times(const std::vector<Integer>& rhs) const;
