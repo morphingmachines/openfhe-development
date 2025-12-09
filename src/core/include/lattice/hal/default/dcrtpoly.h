@@ -218,8 +218,8 @@ public:
                 uint64_t* res       = reinterpret_cast<uint64_t*>(&tmp.m_vectors[t][0]);
                 const uint64_t* op1 = reinterpret_cast<const uint64_t*>(&m_vectors[t][0]);
                 const uint64_t* op2 = reinterpret_cast<const uint64_t*>(&rhs.m_vectors[t][0]);
-                reFHE::GetInstance().EltwiseMultModNative(res, op1, op2, ringdm,
-                                                          params[t]->GetModulus().template ConvertToInt<uint64_t>());
+                reFHE::GetInstance().MulMod(res, op1, op2, ringdm,
+                                            params[t]->GetModulus().template ConvertToInt<uint64_t>());
             }
             return tmp;
         }
